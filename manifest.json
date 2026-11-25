@@ -1,0 +1,10 @@
+{
+	"id": "right-click-tag-colors",
+	"name": "Right-Click Tag Colors",
+	"version": "1.0.0",
+	"minAppVersion": "1.5.0",
+	"description": "Right-click any tag to color it: in notes, reading view, Tasks and Dataview results, and Properties. Pick from your palette or any custom color.",
+	"author": "Totolici Alexandru",
+	"authorUrl": "https://github.com/toto1384",
+	"isDesktopOnly": false
+}

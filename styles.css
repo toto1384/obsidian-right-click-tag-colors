@@ -1,0 +1,31 @@
+/* Right-Click Tag Colors: color window and settings. The tag colors themselves are a generated <style>. */
+.rctc-swatches { display: flex; flex-wrap: wrap; gap: 6px; }
+button.rctc-swatch {
+  width: 22px; height: 22px; padding: 0; border-radius: 50%; box-shadow: none; cursor: pointer;
+  background-color: var(--rctc-swatch); border: 2px solid transparent;
+}
+button.rctc-swatch:hover { transform: scale(1.15); }
+button.rctc-swatch.is-current { border-color: var(--text-normal); }
+
+.rctc-modal .rctc-preview { margin-bottom: 12px; }
+.rctc-modal .rctc-label { font-size: var(--font-ui-small); color: var(--text-muted); margin: 8px 0 6px; }
+.rctc-modal .rctc-custom { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+.rctc-modal .rctc-custom .rctc-label { margin: 0; }
+
+/* Palette editor: a setting row whose control holds the colors, left-aligned like the row text */
+.rctc-palette-setting .setting-item-control { justify-content: flex-start; }
+.rctc-palette-edit { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.rctc-palette-cell { position: relative; display: flex; }
+/* The remove × sits on the color's corner; shown on hover (always on touch screens) */
+.rctc-palette-cell button.rctc-remove {
+  position: absolute; top: -6px; right: -6px; width: 16px; height: 16px; padding: 0; border-radius: 50%;
+  font-size: 11px; line-height: 1; box-shadow: none; opacity: 0;
+  color: var(--text-muted); background: var(--background-modifier-border);
+}
+.rctc-palette-cell:hover button.rctc-remove, .is-mobile .rctc-palette-cell button.rctc-remove { opacity: 1; }
+.rctc-palette-cell button.rctc-remove:hover { color: var(--text-on-accent); background: var(--text-error); }
+button.rctc-add { width: 28px; height: 28px; padding: 0; border-radius: 50%; }
+
+.rctc-tag-row .setting-item-control { flex-wrap: wrap; gap: 8px; }
+.rctc-tag-row .rctc-swatches { gap: 4px; }
+.rctc-tag-row button.rctc-swatch { width: 16px; height: 16px; }
