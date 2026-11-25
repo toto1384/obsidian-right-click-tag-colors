@@ -9,9 +9,9 @@
 //   line text (tagAtClick).
 // - Colors are one generated <style> per window (main and popouts), built from the settings. Rules are
 //   !important so they win over automatic tag-coloring plugins such as Colored Tags, which keep coloring every
-//   tag that has no color here. Colored Tags adds an exact `colored-tag-<name>` class to editor spans and
-//   Properties pills; those selectors are used first, with Obsidian's own `cm-tag-<name without "/">` class
-//   as a fallback.
+//   tag that has no color here. In the editor, Colored Tags' exact `colored-tag-<name>` class is used first,
+//   with Obsidian's own `cm-tag-<name without "/">` class as a fallback. Tag pills in Properties and Bases
+//   have no tag name in their markup, so the plugin marks them itself (watchPills).
 
 const { Plugin, Menu, Modal, PluginSettingTab, Setting } = require("obsidian");
 const { EditorView } = require("@codemirror/view");
@@ -84,11 +84,12 @@ module.exports = class RightClickTagColorsPlugin extends Plugin {
 		this.styleEls.clear();
 	}
 
-	// Colors and right-click handling for one window's document
+	// Colors, pill marking and right-click handling for one window's document
 	attachTo(doc) {
 		const styleEl = doc.head.createEl("style", { attr: { id: "right-click-tag-colors" } });
 		styleEl.textContent = this.buildCss();
 		this.styleEls.set(doc, styleEl);
+		this.watchPills(doc);
 		// Capture phase: runs before Obsidian builds its editor menu, and before other handlers of rendered tags
 		this.registerDomEvent(doc, "contextmenu", (evt) => {
 			const target = evt.target instanceof doc.defaultView.Element ? evt.target : null;
@@ -102,6 +103,35 @@ module.exports = class RightClickTagColorsPlugin extends Plugin {
 			this.addMenuItems(menu, tag);
 			menu.showAtMouseEvent(evt);
 		}, { capture: true });
+	}
+
+	// Tag pills in Properties and Bases carry no tag name in their markup (only the text), so CSS can't target
+	// one tag. Mark each pill with data-rctc-tag="<tag>"; checked at most once per frame, and only when
+	// pills were added.
+	watchPills(doc) {
+		const selector = TAG_PROPERTY_PILLS.map((p) => `${p} .multi-select-pill`).join(",");
+		const mark = () => {
+			for (const pill of doc.querySelectorAll(selector)) {
+				const tag = normalizeTag(pill.querySelector(".multi-select-pill-content")?.textContent || pill.textContent);
+				if (pill.dataset.rctcTag !== tag) pill.dataset.rctcTag = tag;
+			}
+		};
+		let queued = false;
+		const observer = new doc.defaultView.MutationObserver((mutations) => {
+			if (queued) return;
+			const hasPill = mutations.some((m) => [...m.addedNodes].some((n) =>
+				n.nodeType === 1 && (n.matches(".multi-select-pill") || n.querySelector(".multi-select-pill"))
+				|| n.parentElement?.closest(".multi-select-pill")));
+			if (!hasPill) return;
+			queued = true;
+			doc.defaultView.requestAnimationFrame(() => {
+				queued = false;
+				mark();
+			});
+		});
+		observer.observe(doc.body, { childList: true, subtree: true });
+		this.register(() => observer.disconnect());
+		mark();
 	}
 
 	addMenuItems(menu, rawTag) {
@@ -133,15 +163,16 @@ module.exports = class RightClickTagColorsPlugin extends Plugin {
 			const href = cssString("#" + tag);
 			const cls = CSS.escape("colored-tag-" + tag);
 			const flat = tag.replace(/[^_a-zA-Z0-9\-]/g, "");
+			const pills = TAG_PROPERTY_PILLS.map((p) => `body ${p} .multi-select-pill[data-rctc-tag="${cssString(tag)}"]`);
 			const selectors = [
 				`body a.tag[href="${href}" i]`,
 				`body .cm-s-obsidian .cm-line span.cm-hashtag.${cls}`,
 				...(flat ? [`body .cm-s-obsidian .cm-line span.cm-hashtag[class~="cm-tag-${flat}" i]`] : []),
-				...TAG_PROPERTY_PILLS.map((p) => `body ${p} .multi-select-pill.${cls}`),
+				...pills,
 			];
 			const text = textColorFor(color);
 			rules.push(`${selectors.join(",\n")} {\n\tbackground-color: ${color} !important;\n\tbackground-image: none !important;\n\tcolor: ${text} !important;\n}`);
-			rules.push(`${TAG_PROPERTY_PILLS.map((p) => `body ${p} .multi-select-pill.${cls} .multi-select-pill-remove-button`).join(",\n")} {\n\tcolor: ${text} !important;\n}`);
+			rules.push(`${pills.map((p) => `${p} .multi-select-pill-remove-button`).join(",\n")} {\n\tcolor: ${text} !important;\n}`);
 		}
 		return rules.join("\n");
 	}
